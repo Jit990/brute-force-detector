@@ -187,3 +187,30 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   status.style.color = '#ff5252';
   status.textContent = `Invalid credentials. Attempt ${failCount}/${MAX_FAILS}`;
 });
+function loadAnalytics() {
+  const el = document.getElementById('analytics');
+  el.innerHTML = `
+    <div>Total Attempts: ${failCount}</div>
+    <div>Failures: ${failCount}</div>
+    <div>Status: ${failCount >= MAX_FAILS ? 
+      '<span style="color:#ff5252">LOCKED</span>' : 
+      '<span style="color:#00ff9c">ACTIVE</span>'}</div>
+  `;
+}
+
+function loadAttempts() {
+  const tbody = document.querySelector('#attempts tbody');
+  tbody.innerHTML = '';
+  for (let i = 1; i <= failCount; i++) {
+    tbody.innerHTML += `
+      <tr>
+        <td>${new Date().toLocaleString()}</td>
+        <td>admin</td>
+        <td>127.0.0.1</td>
+        <td>Browser</td>
+        <td class="success-no">No</td>
+        <td>Invalid password</td>
+      </tr>
+    `;
+  }
+}
