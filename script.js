@@ -1,5 +1,4 @@
-
-// Admin credentials (front-end gating; enforced server-side too)
+// Admin gating (front-end check; server enforces too)
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'admin9907';
 
@@ -13,7 +12,7 @@ let jwtToken = null;
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); window.addEventListener('resize', () => { resizeCanvas(); drops = makeDrops(); });
 const letters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&@';
 const fontSize = 14;
 function makeDrops() { return Array(Math.floor(canvas.width / fontSize)).fill(1); }
@@ -40,14 +39,8 @@ const failText = document.getElementById('failText');
 document.getElementById('closeModal').addEventListener('click', () => failModal.hidden = true);
 
 // Helpers
-function showFailPopup(msg) {
-  failText.textContent = msg;
-  failModal.hidden = false;
-}
-function setStatus(msg, ok = false) {
-  statusEl.style.color = ok ? '#00ff9c' : '#ff5252';
-  statusEl.textContent = msg;
-}
+function showFailPopup(msg) { failText.textContent = msg; failModal.hidden = false; }
+function setStatus(msg, ok = false) { statusEl.style.color = ok ? '#00ff9c' : '#ff5252'; statusEl.textContent = msg; }
 async function authFetch(url, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (jwtToken) headers.Authorization = `Bearer ${jwtToken}`;
@@ -56,7 +49,7 @@ async function authFetch(url, options = {}) {
   return resp;
 }
 
-// Login submit
+// Login submit (single handler)
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const user = document.getElementById('user').value.trim();
@@ -92,7 +85,7 @@ loginForm.addEventListener('submit', async (e) => {
     jwtToken = data.token;
     setStatus('Access granted.', true);
 
-    // Show admin dashboard only if admin creds used
+    // Show admin dashboard only for admin creds
     if (user === ADMIN_USER && password === ADMIN_PASS) {
       adminPanel.hidden = false;
       await loadAnalytics();
@@ -103,7 +96,7 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
-// Explicit admin dashboard button
+// Admin dashboard button
 goAdminBtn.addEventListener('click', async () => {
   if (!jwtToken) return setStatus('Please log in to access admin.');
   adminPanel.hidden = false;
@@ -111,7 +104,7 @@ goAdminBtn.addEventListener('click', async () => {
   await loadAttempts();
 });
 
-// Admin dashboard loaders
+// Admin loaders
 async function loadAnalytics() {
   const el = document.getElementById('analytics');
   const resp = await authFetch('/api/admin/analytics');
@@ -139,7 +132,7 @@ async function loadAttempts() {
   `).join('');
 }
 
-// Admin controls (block/unblock)
+// Admin controls
 document.getElementById('blockBtn').addEventListener('click', () => blockUser(true));
 document.getElementById('unblockBtn').addEventListener('click', () => blockUser(false));
 async function blockUser(block) {
