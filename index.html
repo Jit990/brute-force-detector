@@ -1,77 +1,105 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8" />
-  <title>Access Portal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBER-SENTINEL | Brute Force Detector</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Fira+Code:wght@300;500&display=swap"
+    rel="stylesheet">
 </head>
-<body class="dark">
-  <canvas id="matrix"></canvas>
 
-  <main class="card">
-    <h1>ACCESS PORTAL</h1>
-    <form id="loginForm">
-      <div class="field">
-        <label>User</label>
-        <input type="text" id="user" autocomplete="username" required />
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="password" autocomplete="current-password" required />
-      </div>
-      <button type="submit" class="btn">Login</button>
-      <p id="status" class="status"></p>
-    </form>
-    <div class="links">
-      <button id="goAdmin" class="link-btn">Admin Dashboard</button>
-    </div>
-  </main>
+<body>
+  <canvas id="matrix-canvas"></canvas>
 
-  <section class="card wide" id="adminPanel" hidden>
-    <h2>ADMIN DASHBOARD</h2>
-    <div class="grid">
-      <div class="panel">
-        <h3>Analytics</h3>
-        <div id="analytics"></div>
+  <div class="overlay"></div>
+
+  <div class="main-wrapper">
+    <header class="hacker-header">
+      <div class="glitch-wrapper">
+        <h1 class="glitch" data-text="CYBER-SENTINEL">CYBER-SENTINEL</h1>
       </div>
-      <div class="panel">
-        <h3>Recent Attempts</h3>
-        <table id="attempts">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>User</th>
-              <th>IP</th>
-              <th>User agent</th>
-              <th>Success</th>
-              <th>Reason</th>
-              <th>Entered password</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <p class="subtitle">Advanced Brute-Force Detection & Forensic Logging System</p>
+      <div class="system-status">
+        <span class="status-dot"></span> SYSTEM: <span id="sys-status">ACTIVE</span> | <span id="current-time"></span>
       </div>
-      <div class="panel">
-        <h3>User controls</h3>
-        <div class="controls">
-          <input id="userEmail" placeholder="username (e.g., admin)" />
-          <button id="blockBtn" class="btn">Block</button>
-          <button id="unblockBtn" class="btn">Unblock</button>
+    </header>
+
+    <!-- LOGIN SECTION -->
+    <section class="login-section" id="loginBox">
+      <div class="scanner-line"></div>
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+        <span class="title">AUTH_GATEWAY_V2.1</span>
+      </div>
+      <div class="login-content">
+        <div class="input-group">
+          <label for="username">ACCESS_ID</label>
+          <input type="text" id="username" placeholder="Enter Identity..." autocomplete="off">
         </div>
-        <p id="adminStatus" class="status"></p>
+        <div class="input-group">
+          <label for="password">SECURITY_TOKEN</label>
+          <input type="password" id="password" placeholder="Enter Token..." autocomplete="off">
+        </div>
+        <button onclick="attemptLogin()" class="cyber-btn">
+          <span class="btn-text">INITIALIZE ACCESS</span>
+          <span class="btn-glitch"></span>
+        </button>
+        <div id="status" class="login-status"></div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <div id="failModal" class="modal" hidden>
-    <div class="modal-content">
-      <h3>Login failed</h3>
-      <p id="failText"></p>
-      <button id="closeModal" class="btn">Close</button>
-    </div>
+    <!-- DASHBOARD (Hidden until login) -->
+    <section id="dashboard" class="dashboard-container hidden">
+      <div class="grid-layout">
+        <!-- Data Visualizer -->
+        <div class="glass-panel stats-panel">
+          <h3>SYSTEM METRICS</h3>
+          <div class="stats-grid">
+            <div class="stat-card success">
+              <span class="label">AUTHORIZED</span>
+              <span class="value" id="successCount">0</span>
+            </div>
+            <div class="stat-card danger">
+              <span class="label">REJECTED</span>
+              <span class="value" id="failCount">0</span>
+            </div>
+            <div class="stat-card warning">
+              <span class="label">THREAT_LEVEL</span>
+              <span class="value" id="threatLevel">LOW</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log Panel -->
+        <div class="glass-panel log-panel">
+          <div class="panel-header">
+            <h3>FORENSIC TRAFFIC LOGS</h3>
+            <div class="controls">
+              <button onclick="clearLogs()" class="small-btn">CLEAR</button>
+              <button onclick="exportLogs()" class="small-btn highlight">EXPORT</button>
+            </div>
+          </div>
+          <div id="logPanel" class="terminal-logs"></div>
+        </div>
+
+        <!-- Threat Map / Details -->
+        <div class="glass-panel info-panel">
+          <h3>SECURITY INTEL</h3>
+          <div id="securityIntel" class="intel-content">
+            <p>> Monitoring port 80/443...</p>
+            <p>> Firewall: Layer 7 Active</p>
+            <p>> IPS: Enabled</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <script src="/script.js"></script>
+  <script src="script.js"></script>
 </body>
+
 </html>
