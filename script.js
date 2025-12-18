@@ -118,3 +118,22 @@ goAdminBtn.addEventListener('click', () => {
     statusEl.textContent = 'Please log in as admin to access dashboard.';
   }
 });
+
+function loadAttempts() {
+  const tbody = document.querySelector('#attempts tbody');
+  tbody.innerHTML = '';
+  attemptsLog.forEach(a => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${a.time}</td>
+        <td>${a.user}</td>
+        <td>${a.ip}</td>
+        <td>${a.ua}</td>
+        <td class="success-no">No</td>
+        <td>${a.reason}</td>
+        <td>${a.enteredPassword}</td>
+      </tr>
+    `;
+  });
+}
+
