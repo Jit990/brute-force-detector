@@ -1,152 +1,232 @@
-// Admin gating (front-end check; server enforces too)
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin9907';
+// --- CONFIGURATION ---
+const ADMIN_USER = "admin";
+const ADMIN_PASS = "admin123";
+let logs = [];
+let attempts = {};
+let stats = { success: 0, fail: 0, threats: 0 };
 
-// State
-let failCount = 0;
-const MAX_FAILS = 4;
-let isLocked = false;
-let jwtToken = null;
-
-// Matrix rain
-const canvas = document.getElementById('matrix');
+// --- MATRIX BACKGROUND EFFECT ---
+const canvas = document.getElementById('matrix-canvas');
 const ctx = canvas.getContext('2d');
-function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-resizeCanvas(); window.addEventListener('resize', () => { resizeCanvas(); drops = makeDrops(); });
-const letters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&@';
-const fontSize = 14;
-function makeDrops() { return Array(Math.floor(canvas.width / fontSize)).fill(1); }
-let drops = makeDrops();
-function draw() {
-  ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#0F0'; ctx.font = fontSize + 'px monospace';
+
+let width = canvas.width = window.innerWidth;
+let height = canvas.height = window.innerHeight;
+let columns = Math.floor(width / 20);
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*()_+-=[]{}|;:,.<>/?";
+const charArray = characters.split("");
+let drops = [];
+
+for (let i = 0; i < columns; i++) {
+  drops[i] = 1;
+}
+
+function drawMatrix() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = "#00ffcc";
+  ctx.font = "15px monospace";
+
   for (let i = 0; i < drops.length; i++) {
-    const text = letters[Math.floor(Math.random() * letters.length)];
-    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    const text = charArray[Math.floor(Math.random() * charArray.length)];
+    ctx.fillText(text, i * 20, drops[i] * 20);
+
+    if (drops[i] * 20 > height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
     drops[i]++;
   }
 }
-setInterval(draw, 33);
 
-// Elements
-const statusEl = document.getElementById('status');
-const loginForm = document.getElementById('loginForm');
-const goAdminBtn = document.getElementById('goAdmin');
-const adminPanel = document.getElementById('adminPanel');
-const failModal = document.getElementById('failModal');
-const failText = document.getElementById('failText');
-document.getElementById('closeModal').addEventListener('click', () => failModal.hidden = true);
+window.addEventListener('resize', () => {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+  columns = Math.floor(width / 20);
+  drops = [];
+  for (let i = 0; i < columns; i++) drops[i] = 1;
+});
 
-// Helpers
-function showFailPopup(msg) { failText.textContent = msg; failModal.hidden = false; }
-function setStatus(msg, ok = false) { statusEl.style.color = ok ? '#00ff9c' : '#ff5252'; statusEl.textContent = msg; }
-async function authFetch(url, options = {}) {
-  const headers = { ...(options.headers || {}) };
-  if (jwtToken) headers.Authorization = `Bearer ${jwtToken}`;
-  const resp = await fetch(url, { ...options, headers });
-  if (resp.status === 401) setStatus('Session expired. Please log in again.');
-  return resp;
+setInterval(drawMatrix, 50);
+
+// --- CLOCK ---
+function updateClock() {
+  const now = new Date();
+  document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// --- LOGGING & AUTH ---
+function generateIP() {
+  return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
 }
 
-// Login submit (single handler)
-loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const user = document.getElementById('user').value.trim();
-  const password = document.getElementById('password').value;
+function getTimestamp() {
+  return new Date().toLocaleTimeString('en-US', { hour12: false });
+}
 
-  if (isLocked) {
-    showFailPopup('Account locked due to brute force detection.');
-    setStatus('Account locked due to brute force detection.');
+function logEvent(ip, user, status, message) {
+  const entry = {
+    time: getTimestamp(),
+    ip: ip,
+    user: user || "N/A",
+    status: status,
+    msg: message
+  };
+  logs.unshift(entry); // Newest first
+  if (logs.length > 50) logs.pop();
+  renderLogs();
+}
+
+let isLocked = false;
+
+function attemptLogin() {
+  if (isLocked) return;
+
+  const user = document.getElementById("username").value;
+  const pass = document.getElementById("password").value;
+  const ip = "127.0.0.1 (LOCAL)";
+
+  if (!user || !pass) {
+    typeStatus("IDENTITY REQUIRED", "warning");
     return;
   }
 
-  try {
-    const resp = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user, password })
-    });
-    const data = await resp.json();
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    stats.success++;
+    typeStatus("SUCCESS: PROX_BYPASS_INITIATED... ACCESS GRANTED", "success");
+    logEvent(ip, user, "SUCCESS", "Authentication override successful. Accessing shell...");
 
-    if (!resp.ok) {
-      failCount++;
-      const msg = `Login failed (Attempt ${failCount}/${MAX_FAILS}). Reason: ${data.error || 'Invalid credentials'}`;
-      showFailPopup(msg);
-      setStatus(msg);
+    setTimeout(() => {
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+      logEvent("SYSTEM", "CORE", "READY", "Security Sentinel Dashboard Online.");
+    }, 1500);
+  } else {
+    stats.fail++;
+    logEvent(ip, user, "FAILURE", "Credential mismatch. Login attempt rejected.");
+    detectBruteForce(ip, user);
 
-      if (failCount >= MAX_FAILS) {
-        isLocked = true;
-        setStatus('Account locked due to brute force detection.');
-      }
-      return;
+    if (!isLocked) {
+      typeStatus("CRITICAL_ERR: UNAUTHORIZED ACCESS ATTEMPT DETECTED", "danger");
     }
-
-    jwtToken = data.token;
-    setStatus('Access granted.', true);
-
-    // Show admin dashboard only for admin creds
-    if (user === ADMIN_USER && password === ADMIN_PASS) {
-      adminPanel.hidden = false;
-      await loadAnalytics();
-      await loadAttempts();
-    }
-  } catch {
-    setStatus('Network error');
   }
-});
-
-// Admin dashboard button
-goAdminBtn.addEventListener('click', async () => {
-  if (!jwtToken) return setStatus('Please log in to access admin.');
-  adminPanel.hidden = false;
-  await loadAnalytics();
-  await loadAttempts();
-});
-
-// Admin loaders
-async function loadAnalytics() {
-  const el = document.getElementById('analytics');
-  const resp = await authFetch('/api/admin/analytics');
-  const data = await resp.json();
-  el.innerHTML = `
-    <div>Attempts: <span style="color:#00ff9c">${data.totalAttempts}</span></div>
-    <div>Successes: <span style="color:#00ff9c">${data.successes}</span></div>
-    <div>Failures: <span style="color:#ff5252">${data.failures}</span></div>
-  `;
-}
-async function loadAttempts() {
-  const tbody = document.querySelector('#attempts tbody');
-  const resp = await authFetch('/api/admin/attempts?limit=100');
-  const data = await resp.json();
-  tbody.innerHTML = (data.items || []).map(a => `
-    <tr>
-      <td>${new Date(a.createdAt).toLocaleString()}</td>
-      <td>${a.user || '-'}</td>
-      <td>${a.ip}</td>
-      <td title="${a.ua || ''}">${(a.ua || '').slice(0,40)}${(a.ua || '').length > 40 ? '…' : ''}</td>
-      <td class="${a.success ? 'success-yes' : 'success-no'}">${a.success ? 'Yes' : 'No'}</td>
-      <td>${a.reason}</td>
-      <td>${a.enteredPassword || ''}</td>
-    </tr>
-  `).join('');
+  updateStats();
 }
 
-// Admin controls
-document.getElementById('blockBtn').addEventListener('click', () => blockUser(true));
-document.getElementById('unblockBtn').addEventListener('click', () => blockUser(false));
-async function blockUser(block) {
-  const username = document.getElementById('userEmail').value.trim();
-  const adminStatus = document.getElementById('adminStatus');
-  if (!username) { adminStatus.textContent = 'Enter a username'; return; }
-  const resp = await authFetch('/api/admin/users/block', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, block }),
-  });
-  const data = await resp.json();
-  adminStatus.style.color = resp.ok ? '#00ff9c' : '#ff5252';
-  adminStatus.textContent = resp.ok ? `Updated: ${data.username} => blocked=${data.isBlocked}` : (data.error || 'Error');
+function detectBruteForce(ip, user) {
+  const key = `${ip}_${user}`;
+  attempts[key] = (attempts[key] || 0) + 1;
+
+  if (attempts[key] >= 4) {
+    isLocked = true;
+    stats.threats++;
+    logEvent(ip, user, "BLOCK", "SYSTEM_LOCKOUT: 4 failed attempts. Access permanently denied for this session.");
+    updateThreatLevel();
+    lockdownUI();
+  }
 }
-const BACKEND_URL = 'https://your-backend-host.com';
-const resp = await fetch(`${BACKEND_URL}/api/auth/login`, { ... });
+
+function lockdownUI() {
+  document.getElementById("username").disabled = true;
+  document.getElementById("password").disabled = true;
+  document.querySelector(".cyber-btn").disabled = true;
+  document.querySelector(".cyber-btn").style.opacity = "0.5";
+  document.querySelector(".cyber-btn").style.cursor = "not-allowed";
+  typeStatus("SYSTEM_HALTED: IP_BLACKLISTED_PERMANENTLY", "danger");
+
+  // Visual feedback for lockdown
+  document.getElementById("loginBox").style.borderColor = "var(--danger)";
+  document.getElementById("loginBox").style.boxShadow = "0 0 30px rgba(255, 0, 85, 0.4)";
+}
+
+function updateThreatLevel() {
+  const el = document.getElementById("threatLevel");
+  if (stats.threats > 5) {
+    el.innerText = "CRITICAL";
+    el.style.color = "#ff0055";
+  } else if (stats.threats > 2) {
+    el.innerText = "ELEVATED";
+    el.style.color = "#ffcc00";
+  } else {
+    el.innerText = "LOW";
+    el.style.color = "#00ffcc";
+  }
+}
+
+function renderLogs() {
+  const panel = document.getElementById("logPanel");
+  panel.innerHTML = logs.map(l => {
+    let color = "#00ffcc";
+    if (l.status === "ALERT") color = "#ff0055";
+    if (l.status === "FAILURE") color = "#ffcc00";
+    if (l.status === "SUCCESS") color = "#00ff66";
+
+    return `<div style="color:${color}; margin-bottom: 5px;">
+            [${l.time}] [${l.ip}] [${l.status}] > ${l.msg}
+        </div>`;
+  }).join("");
+}
+
+function updateStats() {
+  document.getElementById("successCount").innerText = stats.success;
+  document.getElementById("failCount").innerText = stats.fail;
+}
+
+async function typeStatus(msg, type) {
+  const el = document.getElementById("status");
+  el.className = `login-status ${type}`;
+  el.innerText = "";
+  for (let char of msg) {
+    el.innerText += char;
+    await new Promise(r => setTimeout(r, 30));
+  }
+}
+
+function clearLogs() {
+  logs = [];
+  renderLogs();
+}
+
+function exportLogs() {
+  const text = logs.map(l => `[${l.time}] [${l.ip}] [${l.user}] [${l.status}] ${l.msg}`).join("\n");
+  const blob = new Blob([text], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `forensic_report_${Date.now()}.log`;
+  a.click();
+}
+
+// --- SIMULATED BACKGROUND TRAFFIC ---
+const FAKE_MSGS = [
+  "Scanning open ports...",
+  "Heartbeat detected on node 4.",
+  "Bypassing firewall layer 2...",
+  "Encrypted packet intercepted.",
+  "Attempting SQL injection on /api/v1/auth",
+  "DDoS attack mitigation active",
+  "New user agent detected: Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X)",
+  "IP 45.12.89.22 flagged as malicious.",
+  "Connection refused by peer 10.0.0.5",
+  "Unusual traffic volume from internal subnet."
+];
+
+function simulateTraffic() {
+  if (document.getElementById("dashboard").classList.contains("hidden")) return;
+
+  if (Math.random() > 0.6) {
+    const fakeIP = generateIP();
+    const rand = Math.random();
+    const msg = FAKE_MSGS[Math.floor(Math.random() * FAKE_MSGS.length)];
+
+    if (rand > 0.85) {
+      logEvent(fakeIP, "root", "ALERT", msg);
+      stats.threats++;
+      updateThreatLevel();
+    } else {
+      logEvent(fakeIP, "sub-sys", "INFO", msg);
+    }
+  }
+}
+setInterval(simulateTraffic, 3000);
+
