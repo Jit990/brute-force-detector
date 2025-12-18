@@ -113,3 +113,45 @@ async function blockUser(block) {
   adminStatus.style.color = resp.ok ? '#00ff9c' : '#ff5252';
   adminStatus.textContent = resp.ok ? `Updated: ${data.email} => blocked=${data.isBlocked}` : (data.error || 'Error');
 }
+// Matrix rain hacker effect
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.height = window.innerHeight;
+canvas.width = window.innerWidth;
+
+const letters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&@';
+const fontSize = 14;
+const columns = canvas.width / fontSize;
+const drops = Array(Math.floor(columns)).fill(1);
+
+function draw() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0F0';
+  ctx.font = fontSize + 'px monospace';
+  for (let i = 0; i < drops.length; i++) {
+    const text = letters[Math.floor(Math.random() * letters.length)];
+    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+    drops[i]++;
+  }
+}
+setInterval(draw, 33);
+
+// Login form logic
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const user = document.getElementById('user').value.trim();
+  const password = document.getElementById('password').value;
+  const status = document.getElementById('status');
+
+  if (user === 'admin' && password === 'admin') {
+    status.style.color = '#00ff9c';
+    status.textContent = 'Access granted.';
+  } else {
+    status.style.color = '#ff5252';
+    status.textContent = 'Invalid credentials.';
+  }
+});
