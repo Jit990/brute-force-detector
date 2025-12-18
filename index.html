@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>ACCESS PORTAL</title>
+  <title>Access Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body class="dark">
-  <!-- Hacker-style background -->
   <canvas id="matrix"></canvas>
 
   <main class="card">
@@ -29,6 +28,50 @@
     </div>
   </main>
 
-  <script src="script.js"></script>
+  <section class="card wide" id="adminPanel" hidden>
+    <h2>ADMIN DASHBOARD</h2>
+    <div class="grid">
+      <div class="panel">
+        <h3>Analytics</h3>
+        <div id="analytics"></div>
+      </div>
+      <div class="panel">
+        <h3>Recent Attempts</h3>
+        <table id="attempts">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>User</th>
+              <th>IP</th>
+              <th>User agent</th>
+              <th>Success</th>
+              <th>Reason</th>
+              <th>Entered password</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h3>User Controls</h3>
+        <div class="controls">
+          <input id="userEmail" placeholder="username (e.g., admin)" />
+          <button id="blockBtn" class="btn">Block</button>
+          <button id="unblockBtn" class="btn">Unblock</button>
+        </div>
+        <p id="adminStatus" class="status"></p>
+      </div>
+    </div>
+  </section>
+
+  <div id="failModal" class="modal" hidden>
+    <div class="modal-content">
+      <h3>Login failed</h3>
+      <p id="failText"></p>
+      <button id="closeModal" class="btn">Close</button>
+    </div>
+  </div>
+
+  <script src="/script.js"></script>
 </body>
 </html>
