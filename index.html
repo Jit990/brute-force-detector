@@ -1,47 +1,37 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brute Force Detector</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
+  <meta charset="utf-8" />
+  <title>Secure Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <!-- reCAPTCHA v2/v3 client script (example v2 invisible) -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
-
-<body>
-    <div id="login-container" class="container">
-        <h1>Login</h1>
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" placeholder="Enter Username">
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter Password">
-        </div>
-        <button id="login-btn">Login</button>
-        <p id="login-message"></p>
+<body class="dark">
+  <div class="matrix-bg"></div>
+  <main class="card">
+    <h1>ACCESS PORTAL</h1>
+    <form id="loginForm">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+      </div>
+      <div class="captcha">
+        <div class="g-recaptcha" data-sitekey="your_recaptcha_site_key" data-size="invisible" data-callback="onCaptcha"></div>
+      </div>
+      <button type="submit" class="btn">Login</button>
+      <p id="status" class="status"></p>
+    </form>
+    <div class="links">
+      <a href="/admin.html">Admin Dashboard</a>
     </div>
+  </main>
 
-    <div id="dashboard-container" class="container hidden">
-        <h1>Admin Dashboard</h1>
-        <button id="logout-btn">Logout</button>
-        <h3>Failed Login Attempts</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Attempt #</th>
-                    <th>IP Address</th>
-                    <th>Password</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody id="failed-attempts-list">
-                <!-- Failed attempts entries will be populated here -->
-            </tbody>
-        </table>
-    </div>
+  <script src="/js/login.js"></script>
 </body>
-
 </html>
