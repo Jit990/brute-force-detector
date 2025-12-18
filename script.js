@@ -1,3 +1,4 @@
+
 // --- CONFIGURATION ---
 const ADMIN_USER = "admin";
 const ADMIN_PASS = "admin123";
@@ -14,21 +15,18 @@ let height = canvas.height = window.innerHeight;
 let columns = Math.floor(width / 20);
 const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*()_+-=[]{}|;:,.<>/?";
 const charArray = characters.split("");
-let drops = [];
-
-for (let i = 0; i < columns; i++) {
-  drops[i] = 1;
-}
+const matrixColors = ["#00ffcc", "#ff00ff", "#0066ff", "#00ff66"];
+let drops = Array(columns).fill(1);
 
 function drawMatrix() {
-  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
   ctx.fillRect(0, 0, width, height);
-
-  ctx.fillStyle = "#00ffcc";
-  ctx.font = "15px monospace";
 
   for (let i = 0; i < drops.length; i++) {
     const text = charArray[Math.floor(Math.random() * charArray.length)];
+    // Randomly pick color for each drop stream
+    ctx.fillStyle = matrixColors[i % matrixColors.length];
+    ctx.font = "16px monospace";
     ctx.fillText(text, i * 20, drops[i] * 20);
 
     if (drops[i] * 20 > height && Math.random() > 0.975) {
