@@ -136,18 +136,4 @@ function loadAttempts() {
     `;
   });
 }
-// Admin login check
-if (user === 'admin' && password === 'admin9907') {
-  status.style.color = '#00ff9c';
-  status.textContent = 'Access granted. Welcome Admin!';
-  failCount = 0;
-  adminPanel.hidden = false;   // show dashboard
-  loadAnalytics();
-  loadAttempts();
-  return;
-}
-
-// Non-admin users never see dashboard
-status.style.color = '#ff5252';
-status.textContent = `Invalid credentials. Attempt ${failCount}/${MAX_FAILS}`;
 
