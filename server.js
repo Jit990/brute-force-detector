@@ -119,3 +119,32 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+
+
+// Middleware to require admin
+function requireAdmin(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (!payload.roles.includes('admin')) return res.status(403).json({ error: 'Forbidden' });
+    req.user = payload;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// Admin routes
+app.get('/api/admin/attempts', requireAdmin, async (req, res) => {
+  const items = await Attempt.find().sort({ createdAt: -1 }).limit(50).lean();
+  res.json({ items });
+});
+
+app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
+  const totalAttempts = await Attempt.countDocuments();
+  const successes = await Attempt.countDocuments({ success: true });
+  const failures = await Attempt.countDocuments({ success: false });
+  res.json({ totalAttempts, successes, failures });
+});
