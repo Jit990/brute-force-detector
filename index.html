@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Secure Login</title>
+  <title>Brute Force Detector — Secure Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/css/styles.css" />
-  <!-- reCAPTCHA v2/v3 client script (example v2 invisible) -->
+  <link rel="stylesheet" href="/style.css" />
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body class="dark">
@@ -28,10 +27,45 @@
       <p id="status" class="status"></p>
     </form>
     <div class="links">
-      <a href="/admin.html">Admin Dashboard</a>
+      <button id="goAdmin" class="link-btn">Admin Dashboard</button>
     </div>
   </main>
 
-  <script src="/js/login.js"></script>
+  <section class="card wide" id="adminPanel" hidden>
+    <h2>ADMIN DASHBOARD</h2>
+    <div class="grid">
+      <div class="panel">
+        <h3>Analytics</h3>
+        <div id="analytics"></div>
+      </div>
+      <div class="panel">
+        <h3>Recent Attempts</h3>
+        <table id="attempts">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Email</th>
+              <th>IP</th>
+              <th>UA</th>
+              <th>Success</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h3>User Controls</h3>
+        <div class="controls">
+          <input id="userEmail" placeholder="user@example.com" />
+          <button id="blockBtn" class="btn">Block</button>
+          <button id="unblockBtn" class="btn">Unblock</button>
+        </div>
+        <p id="adminStatus" class="status"></p>
+      </div>
+    </div>
+  </section>
+
+  <script src="/script.js"></script>
 </body>
 </html>
