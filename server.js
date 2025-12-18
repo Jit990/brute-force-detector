@@ -1,128 +1,43 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const path = require('path');
+// server.js
+import express from 'express';
+import helmet from 'helmet';
+import path from 'path';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+import connectDB from './config/db.js';
+import authRoutes from './routes/auth.js';
+import adminRoutes from './routes/admin.js';
+import analyticsRoutes from './routes/analytics.js';
+import rateLimitMiddleware from './middleware/rateLimit.js';
+
+dotenv.config();
+
+// Connect to MongoDB
+await connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Serve static files from 'public' directory
+// Security middleware
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(rateLimitMiddleware);
 
-// In-memory storage for demo (use database in production)
-let loginAttempts = {};
-let logs = [];
-let totalAttempts = 0;
-let failedAttempts = 0;
-let detectedThreats = 0;
+// Resolve __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Constants
-const MAX_ATTEMPTS = 3;
-const LOCKOUT_TIME = 5000; // 5 seconds
-const CORRECT_USER = 'admin';
-const CORRECT_PASS = 'secure123';
+// Serve static front‑end files (index.html, style.css, script.js)
+app.use(express.static(__dirname));
 
-// Helper functions
-const generateIP = () => {
-    return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-};
-
-const getTime = () => {
-    const now = new Date();
-    return now.toTimeString().split(' ')[0];
-};
-
-const addLog = (user, status, type = 'info', ip) => {
-    const logEntry = {
-        time: getTime(),
-        ip: ip || generateIP(),
-        user: user || 'UNKNOWN',
-        status: status,
-        type: type
-    };
-    logs.push(logEntry);
-    console.log(`[${logEntry.time}] IP: ${logEntry.ip} | USER: ${logEntry.user} | STATUS: ${logEntry.status}`);
-};
-
-// API Routes
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const clientIP = req.ip || req.connection.remoteAddress || generateIP();
-
-    if (!username || !password) {
-        addLog(username, 'MISSING CREDENTIALS', 'error', clientIP);
-        return res.status(400).json({ success: false, message: 'CREDENTIALS REQUIRED' });
-    }
-
-    totalAttempts++;
-
-    // Check if IP is locked
-    if (loginAttempts[clientIP] && loginAttempts[clientIP].locked) {
-        addLog(username, 'ACCOUNT LOCKED - BRUTE FORCE DETECTED', 'error', clientIP);
-        return res.status(429).json({ success: false, message: 'BRUTE FORCE DETECTED. TERMINAL LOCKED.' });
-    }
-
-    if (username === CORRECT_USER && password === CORRECT_PASS) {
-        // Success
-        addLog(username, 'ACCESS GRANTED', 'success', clientIP);
-        // Reset attempts on success
-        if (loginAttempts[clientIP]) {
-            loginAttempts[clientIP].attempts = 0;
-            loginAttempts[clientIP].locked = false;
-        }
-        return res.json({ success: true, message: 'ACCESS GRANTED' });
-    } else {
-        // Fail
-        if (!loginAttempts[clientIP]) {
-            loginAttempts[clientIP] = { attempts: 0, locked: false };
-        }
-        loginAttempts[clientIP].attempts++;
-
-        failedAttempts++;
-        addLog(username, `AUTH FAILED (Attempt ${loginAttempts[clientIP].attempts})`, 'info', clientIP);
-
-        if (loginAttempts[clientIP].attempts >= MAX_ATTEMPTS) {
-            loginAttempts[clientIP].locked = true;
-            detectedThreats++;
-            addLog(username, 'BRUTE FORCE DETECTED - LOCKED', 'error', clientIP);
-
-            // Unlock after LOCKOUT_TIME
-            setTimeout(() => {
-                if (loginAttempts[clientIP]) {
-                    loginAttempts[clientIP].locked = false;
-                    loginAttempts[clientIP].attempts = 0;
-                    addLog('SYSTEM', 'TERMINAL UNLOCKED', 'info', clientIP);
-                }
-            }, LOCKOUT_TIME);
-
-            return res.status(429).json({ success: false, message: 'BRUTE FORCE DETECTED. TERMINAL LOCKED.' });
-        } else {
-            return res.status(401).json({ success: false, message: 'INVALID CREDENTIALS' });
-        }
-    }
-});
-
-app.get('/api/logs', (req, res) => {
-    res.json(logs.slice(-50)); // Last 50 logs
-});
-
-app.get('/api/stats', (req, res) => {
-    res.json({
-        totalAttempts,
-        failedAttempts,
-        detectedThreats
-    });
-});
-
-// Serve the main HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    addLog('SYSTEM', 'SERVER STARTED', 'info');
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
