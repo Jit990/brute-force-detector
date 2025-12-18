@@ -148,3 +148,5 @@ async function blockUser(block) {
   adminStatus.style.color = resp.ok ? '#00ff9c' : '#ff5252';
   adminStatus.textContent = resp.ok ? `Updated: ${data.username} => blocked=${data.isBlocked}` : (data.error || 'Error');
 }
+const BACKEND_URL = 'https://your-backend-host.com';
+const resp = await fetch(`${BACKEND_URL}/api/auth/login`, { ... });
