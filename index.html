@@ -2,26 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Brute Force Detector — Secure Login</title>
+  <title>ACCESS PORTAL</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/style.css" />
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="dark">
-  <div class="matrix-bg"></div>
+  <!-- Hacker-style background -->
+  <canvas id="matrix"></canvas>
+
   <main class="card">
     <h1>ACCESS PORTAL</h1>
     <form id="loginForm">
       <div class="field">
-        <label>Email</label>
-        <input type="email" id="email" autocomplete="username" required />
+        <label>User</label>
+        <input type="text" id="user" autocomplete="username" required />
       </div>
       <div class="field">
         <label>Password</label>
         <input type="password" id="password" autocomplete="current-password" required />
-      </div>
-      <div class="captcha">
-        <div class="g-recaptcha" data-sitekey="your_recaptcha_site_key" data-size="invisible" data-callback="onCaptcha"></div>
       </div>
       <button type="submit" class="btn">Login</button>
       <p id="status" class="status"></p>
@@ -31,41 +29,6 @@
     </div>
   </main>
 
-  <section class="card wide" id="adminPanel" hidden>
-    <h2>ADMIN DASHBOARD</h2>
-    <div class="grid">
-      <div class="panel">
-        <h3>Analytics</h3>
-        <div id="analytics"></div>
-      </div>
-      <div class="panel">
-        <h3>Recent Attempts</h3>
-        <table id="attempts">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Email</th>
-              <th>IP</th>
-              <th>UA</th>
-              <th>Success</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="panel">
-        <h3>User Controls</h3>
-        <div class="controls">
-          <input id="userEmail" placeholder="user@example.com" />
-          <button id="blockBtn" class="btn">Block</button>
-          <button id="unblockBtn" class="btn">Unblock</button>
-        </div>
-        <p id="adminStatus" class="status"></p>
-      </div>
-    </div>
-  </section>
-
-  <script src="/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
