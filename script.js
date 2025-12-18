@@ -155,3 +155,35 @@ document.getElementById('loginForm').addEventListener('submit', (e) => {
     status.textContent = 'Invalid credentials.';
   }
 });
+let failCount = 0;
+const MAX_FAILS = 4;
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const user = document.getElementById('user').value.trim();
+  const password = document.getElementById('password').value;
+  const status = document.getElementById('status');
+
+  // Admin login check
+  if (user === 'admin' && password === 'admin9907') {
+    status.style.color = '#00ff9c';
+    status.textContent = 'Access granted. Welcome Admin!';
+    failCount = 0; // reset counter
+    document.getElementById('adminPanel').hidden = false;
+    loadAnalytics();
+    loadAttempts();
+    return;
+  }
+
+  // Brute force detection
+  if (failCount >= MAX_FAILS) {
+    status.style.color = '#ff5252';
+    status.textContent = 'Account locked due to brute force detection.';
+    return;
+  }
+
+  // Wrong password
+  failCount++;
+  status.style.color = '#ff5252';
+  status.textContent = `Invalid credentials. Attempt ${failCount}/${MAX_FAILS}`;
+});
