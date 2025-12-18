@@ -1,255 +1,115 @@
-/* Matrix Rain Effect */
-const canvas = document.getElementById('matrixCanvas');
-const ctx = canvas.getContext('2d');
-
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
-const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const nums = '0123456789';
-const alphabet = katakana + latin + nums;
-
-const fontSize = 16;
-const columns = canvas.width / fontSize;
-
-const rainDrops = [];
-
-for (let x = 0; x < columns; x++) {
-    rainDrops[x] = 1;
+// CAPTCHA callback for invisible mode
+function onCaptcha(token) {
+  document.getElementById('loginForm').dataset.captchaToken = token;
 }
 
-const drawMatrix = () => {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+const statusEl = document.getElementById('status');
+const loginForm = document.getElementById('loginForm');
+const goAdminBtn = document.getElementById('goAdmin');
+const adminPanel = document.getElementById('adminPanel');
 
-    ctx.fillStyle = '#0F0';
-    ctx.font = fontSize + 'px monospace';
+function getToken() { return localStorage.getItem('token'); }
 
-    for (let i = 0; i < rainDrops.length; i++) {
-        const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-        ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-
-        if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-            rainDrops[i] = 0;
-        }
-        rainDrops[i]++;
-    }
-};
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
-
-setInterval(drawMatrix, 30);
-
-
-/* Logic for Login System */
-
-// State
-let failedAttempts = 0;
-let isLocked = false;
-let totalAttempts = 0;
-let detectedThreats = 0;
-let logs = [];
-
-// DOM Elements
-const loginBtn = document.getElementById('login-btn');
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const messageArea = document.getElementById('message-area');
-const attemptDisplay = document.getElementById('attempt-display');
-const logConsole = document.getElementById('log-console');
-const togglePassBtn = document.getElementById('togglePassword');
-
-const loginSection = document.getElementById('login-section');
-const dashboardSection = document.getElementById('dashboard-section');
-
-// Dashboard Elements
-const totalAttemptsDisplay = document.getElementById('total-attempts-count');
-const failedAttemptsDisplay = document.getElementById('failed-attempts-count');
-const threatsBlockedDisplay = document.getElementById('threats-blocked-count');
-const logoutBtn = document.getElementById('logout-btn');
-
-// Constants
-const MAX_ATTEMPTS = 3;
-const LOCKOUT_TIME = 5000; // 5 seconds for demo purposes
-const CORRECT_USER = 'admin';
-const CORRECT_PASS = 'secure123'; // Hardcoded for demo
-
-// Utils
-const generateIP = () => {
-    return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+async function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const resp = await fetch(url, { ...options, headers });
+  if (resp.status === 401) {
+    statusEl.textContent = 'Session expired. Please log in again.';
+    adminPanel.hidden = true;
+  }
+  return resp;
 }
 
-const getTime = () => {
-    const now = new Date();
-    return now.toTimeString().split(' ')[0];
-}
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  statusEl.textContent = '';
 
-const addLog = (user, status, type = 'info') => {
-    const p = document.createElement('div');
-    p.classList.add('log-line');
+  if (typeof grecaptcha !== 'undefined') {
+    await grecaptcha.execute();
+  }
 
-    let colorClass = 'log-user';
-    if (type === 'error') colorClass = 'log-alert';
-    if (type === 'success') colorClass = 'log-success';
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const captchaToken = loginForm.dataset.captchaToken;
 
-    p.innerHTML = `
-        <span class="log-timestamp">[${getTime()}]</span>
-        <span class="log-ip">IP: ${generateIP()}</span> | 
-        <span class="${colorClass}">USER: ${user || 'UNKNOWN'}</span> | 
-        <span class="${colorClass}">STATUS: ${status}</span>
-    `;
-
-    logConsole.appendChild(p);
-    // Auto scroll
-    logConsole.scrollTop = logConsole.scrollHeight;
-
-    // Track for dashboard
-    logs.push({
-        time: getTime(),
-        user: user,
-        status: status,
-        type: type
+  try {
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, captchaToken }),
     });
-};
-
-const updateUI = () => {
-    attemptDisplay.innerText = `ATTEMPTS: ${failedAttempts}`;
-    if (failedAttempts >= MAX_ATTEMPTS) {
-        attemptDisplay.style.color = 'red';
-    } else {
-        attemptDisplay.style.color = 'var(--primary-color)';
+    const data = await resp.json();
+    if (!resp.ok) {
+      statusEl.textContent = data.error || 'Login failed';
+      return;
     }
-}
-
-const lockAccount = () => {
-    isLocked = true;
-    detectedThreats++;
-    loginBtn.disabled = true;
-    usernameInput.disabled = true;
-    passwordInput.disabled = true;
-    messageArea.innerHTML = '<span class="error-msg">⚠ BRUTE FORCE DETECTED. TERMINAL LOCKED.</span>';
-
-    addLog(usernameInput.value, 'BRUTE FORCE DETECTED - LOCKED', 'error');
-
-    let countdown = LOCKOUT_TIME / 1000;
-    const interval = setInterval(() => {
-        countdown--;
-        if (countdown <= 0) {
-            clearInterval(interval);
-            unlockAccount();
-        }
-    }, 1000);
-}
-
-const unlockAccount = () => {
-    isLocked = false;
-    failedAttempts = 0;
-    loginBtn.disabled = false;
-    usernameInput.disabled = false;
-    passwordInput.disabled = false;
-    usernameInput.value = '';
-    passwordInput.value = '';
-    messageArea.innerHTML = '';
-    updateUI();
-    addLog('SYSTEM', 'TERMINAL UNLOCKED', 'info');
-}
-
-// Event Listeners
-togglePassBtn.addEventListener('click', () => {
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        togglePassBtn.classList.remove('fa-eye');
-        togglePassBtn.classList.add('fa-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        togglePassBtn.classList.remove('fa-eye-slash');
-        togglePassBtn.classList.add('fa-eye');
-    }
+    localStorage.setItem('token', data.token);
+    statusEl.style.color = '#00ff9c';
+    statusEl.textContent = 'Access granted.';
+    adminPanel.hidden = false;
+    loadAnalytics();
+    loadAttempts();
+  } catch {
+    statusEl.textContent = 'Network error';
+  } finally {
+    loginForm.dataset.captchaToken = '';
+    if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
+  }
 });
 
-const handleLogin = () => {
-    if (isLocked) return;
-
-    const user = usernameInput.value;
-    const pass = passwordInput.value;
-
-    if (!user || !pass) {
-        messageArea.innerHTML = '<span class="error-msg">CREDENTIALS REQUIRED</span>';
-        return;
-    }
-
-    totalAttempts++;
-
-    // Simulate processing delay
-    loginBtn.innerHTML = '<span class="blink">AUTHENTICATING...</span>';
-
-    setTimeout(() => {
-        if (user === CORRECT_USER && pass === CORRECT_PASS) {
-            // Success
-            addLog(user, 'ACCESS GRANTED', 'success');
-            loginSuccess();
-        } else {
-            // Fail
-            failedAttempts++;
-            updateUI();
-            addLog(user, `AUTH FAILED (Attempt ${failedAttempts})`, 'info');
-
-            if (failedAttempts >= MAX_ATTEMPTS) {
-                lockAccount();
-            } else {
-                messageArea.innerHTML = '<span class="error-msg">INVALID CREDENTIALS</span>';
-            }
-        }
-        loginBtn.innerHTML = '<span class="btn-text">AUTHENTICATE</span><span class="btn-glitch"></span>';
-    }, 800);
-};
-
-loginBtn.addEventListener('click', handleLogin);
-usernameInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleLogin();
-});
-passwordInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleLogin();
+goAdminBtn.addEventListener('click', () => {
+  const token = getToken();
+  if (!token) {
+    statusEl.textContent = 'Please log in to access admin.';
+    return;
+  }
+  adminPanel.hidden = false;
+  loadAnalytics();
+  loadAttempts();
 });
 
-// Dashboard Logic
-const loginSuccess = () => {
-    messageArea.innerHTML = '<span class="success-msg">ACCESS GRANTED. REDIRECTING...</span>';
-    setTimeout(() => {
-        loginSection.classList.add('hidden-section');
-        loginSection.classList.remove('active-section');
-
-        dashboardSection.classList.remove('hidden-section');
-        dashboardSection.classList.add('active-section');
-
-        loadDashboard();
-    }, 1500);
+async function loadAnalytics() {
+  const el = document.getElementById('analytics');
+  const resp = await authFetch('/api/admin/analytics');
+  const data = await resp.json();
+  el.innerHTML = `
+    <div>Attempts: <span style="color:#00ff9c">${data.totalAttempts}</span></div>
+    <div>Successes: <span style="color:#00ff9c">${data.successes}</span></div>
+    <div>Failures: <span style="color:#ff5252">${data.failures}</span></div>
+  `;
 }
 
-const loadDashboard = () => {
-    totalAttemptsDisplay.innerText = totalAttempts;
-    failedAttemptsDisplay.innerText = totalAttempts - 1; // Assuming 1 success
-    threatsBlockedDisplay.innerText = detectedThreats;
-
-    const eventList = document.getElementById('event-list');
-    eventList.innerHTML = '';
-    logs.slice().reverse().forEach(log => {
-        const li = document.createElement('li');
-        li.style.borderBottom = "1px solid #333";
-        li.style.padding = "5px 0";
-        li.style.color = log.type === 'error' ? 'red' : (log.type === 'success' ? '#0f0' : '#ccc');
-        li.innerText = `[${log.time}] ${log.user} - ${log.status}`;
-        eventList.appendChild(li);
-    });
+async function loadAttempts(page = 1) {
+  const tbody = document.querySelector('#attempts tbody');
+  const resp = await authFetch(`/api/admin/attempts?page=${page}&limit=20`);
+  const data = await resp.json();
+  tbody.innerHTML = (data.items || []).map(a => `
+    <tr>
+      <td>${new Date(a.createdAt).toLocaleString()}</td>
+      <td>${a.email || '-'}</td>
+      <td>${a.ip}</td>
+      <td title="${a.userAgent || ''}">${(a.userAgent || '').slice(0,24)}${(a.userAgent || '').length > 24 ? '…' : ''}</td>
+      <td class="${a.success ? 'success-yes' : 'success-no'}">${a.success ? 'Yes' : 'No'}</td>
+      <td>${a.reason}</td>
+    </tr>
+  `).join('');
 }
 
-logoutBtn.addEventListener('click', () => {
-    location.reload(); // Simple reload to reset state for demo
-});
+document.getElementById('blockBtn').addEventListener('click', () => blockUser(true));
+document.getElementById('unblockBtn').addEventListener('click', () => blockUser(false));
 
-// Init
-addLog('SYSTEM', 'INITIATING LOG SEQUENCE...', 'info');
+async function blockUser(block) {
+  const email = document.getElementById('userEmail').value.trim();
+  const adminStatus = document.getElementById('adminStatus');
+  if (!email) { adminStatus.textContent = 'Enter an email'; return; }
+  const resp = await authFetch('/api/admin/users/block', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, block }),
+  });
+  const data = await resp.json();
+  adminStatus.style.color = resp.ok ? '#00ff9c' : '#ff5252';
+  adminStatus.textContent = resp.ok ? `Updated: ${data.email} => blocked=${data.isBlocked}` : (data.error || 'Error');
+}
